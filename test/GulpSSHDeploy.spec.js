@@ -7,7 +7,7 @@ var options = {
   "port": 22,
   "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
   "username": "scottj",
-  "private_key_file": "~/.ssh/id_rsa",
+  "ssh_key_file": "~/.ssh/id_rsa",
   "releases_to_keep": 3,
   "group": "www-glasstower",
   "permissions": "ugo+rX"
@@ -26,13 +26,13 @@ describe("Basic Object Testing", function() {
     expect(constructor).to.throw(DeploymentException);
   });
 
-  it ("should throw an exception if the private key cannot be found", () => {
+  it ("should throw an exception if the ssh key cannot be found", () => {
     var modifiedOptions = {
       "host": "endor.glasstowerstudios.com",
       "port": 22,
       "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
       "username": "scottj",
-      "private_key_file": "/some/nonexistent/path/to/nowhere/ahsastwqka812/id_rsa",
+      "ssh_key_file": "/some/nonexistent/path/to/nowhere/ahsastwqka812/id_rsa",
       "releases_to_keep": 3,
       "group": "www-glasstower",
       "permissions": "ugo+rX"

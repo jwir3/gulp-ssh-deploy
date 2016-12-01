@@ -5,12 +5,25 @@ import jetpack from 'fs-jetpack';
 import fs from 'fs';
 import os from 'os';
 
-export function DeploymentException(message) {
+export function DeploymentException(message, sshKeyFile) {
   this.mMessage = message;
+  this.mSSHKeyFile = sshKeyFile;
 }
 
 DeploymentException.prototype = {
-  mMessage: null
+  mMessage: null,
+  mSSHKeyFile: null,
+
+  printWarning: function() {
+    var self = this;
+    if (!self.mSSHKeyFile) {
+      gulpUtil.log(gulpUtil.colors.yellow('Warning:'), self.mMessage, "You will not be able to deploy.");
+    } else {
+      gulpUtil.log(gulpUtil.colors.yellow('Warning:'), self.mMessage,
+                   gulpUtil.colors.cyan(self.mSSHKeyFile),
+                   "You will not be able to deploy.");
+    }
+  }
 };
 
 export function GulpSSHDeploy(aOptions) {
@@ -18,9 +31,7 @@ export function GulpSSHDeploy(aOptions) {
   self.mOptions = aOptions;
 
   if (!self.mOptions) {
-    gulpUtil.log(gulpUtil.colors.yellow('Warning:'),
-                 "deploy_config in package.json not properly configured. You will not be able to deploy.");
-    throw new DeploymentException("deploy_config in package.json not properly configured");
+    throw new DeploymentException("deploy_config in package.json not properly configured.");
   }
 
   if (!self.mOptions.package_json_file_path) {
@@ -32,7 +43,7 @@ export function GulpSSHDeploy(aOptions) {
     sshConfig: self.mOptions
   });
 
-  self.setupPrivateKey();
+  self.setupSSHKey();
   // self.addGulpTasks();
 }
 
@@ -51,13 +62,11 @@ GulpSSHDeploy.prototype = {
     return self.mPackageJson;
   },
 
-  setupPrivateKey: function() {
+  setupSSHKey: function() {
     var self = this;
-    if (!fs.existsSync(self.mOptions.private_key_file.replace('~', os.homedir))) {
-      gulpUtil.log(gulpUtil.colors.yellow('Warning:'), "Unable to find private key:",
-                   gulpUtil.colors.cyan(self.mOptions.private_key_file),
-                   "You will not be able to deploy");
-      throw new DeploymentException("Unable to find private key");
+    if (!fs.existsSync(self.mOptions.ssh_key_file.replace('~', os.homedir))) {
+      throw new DeploymentException("Unable to find ssh key:",
+                                    self.mOptions.ssh_key_file);
     }
   }
 };
