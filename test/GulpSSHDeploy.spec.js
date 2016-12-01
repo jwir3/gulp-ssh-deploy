@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { GulpSSHDeploy, DeploymentException } from '../index';
 import jetpack from 'fs-jetpack';
+import gulp from 'gulp';
 
 var options = {
   "host": "endor.glasstowerstudios.com",
@@ -13,7 +14,7 @@ var options = {
   "permissions": "ugo+rX"
 };
 
-describe("Basic Object Testing", function() {
+describe("gulp-ssh-deploy setup", function() {
   it ("should correctly set up an instance of GulpSSHDeploy that has package json information", () => {
     let expectedPackageJsonVersion = jetpack.read('package.json', 'json').version;
     let deployer = new GulpSSHDeploy(options);
@@ -41,4 +42,157 @@ describe("Basic Object Testing", function() {
     var constructor = function() { return new GulpSSHDeploy(modifiedOptions); }
     expect(constructor).to.throw(DeploymentException);
   });
+
+  it ("should throw an exception if a host is not provided", () => {
+    var modifiedOptions = {
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+    };
+
+    var constructor = function() { return new GulpSSHDeploy(modifiedOptions); }
+    expect(constructor).to.throw(DeploymentException);
+  });
+
+  it ("should throw an exception if a remote_directory is not provided", () => {
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+    };
+
+    var constructor = function() { return new GulpSSHDeploy(modifiedOptions); }
+    expect(constructor).to.throw(DeploymentException);
+  });
+
+  it ("should throw an exception if a username is not provided", () => {
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "ssh_key_file": "~/.ssh/id_rsa",
+    };
+
+    var constructor = function() { return new GulpSSHDeploy(modifiedOptions); }
+    expect(constructor).to.throw(DeploymentException);
+  });
+
+  it ("should throw an exception if an ssh_key_file is not provided", () => {
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+    };
+
+    var constructor = function() { return new GulpSSHDeploy(modifiedOptions); }
+    expect(constructor).to.throw(DeploymentException);
+  });
+
+  it ("should not require port, releases_to_keep, group, or permissions options", () => {
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+    };
+
+    var deployer = new GulpSSHDeploy(modifiedOptions);
+    expect(deployer).to.not.be.null;
+    expect(deployer.getPort()).to.eq(22);
+  });
+
+  it ("should throw an exception if packaging is requested but the package task is not present", () => {
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "port": 22,
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+      "releases_to_keep": 3,
+      "group": "www-glasstower",
+      "permissions": "ugo+rX",
+      "package_task": "packageBlahBlahGarbage"
+    };
+
+    var constructor = function () { new GulpSSHDeploy(modifiedOptions); }
+    expect(constructor).to.throw(DeploymentException);
+  });
+
+  it ("should not throw an exception if packaging is requested and the package task is present", () => {
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "port": 22,
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+      "releases_to_keep": 3,
+      "group": "www-glasstower",
+      "permissions": "ugo+rX",
+      "package_task": "bogusTask"
+    };
+
+    gulp.task("bogusTask", function() {
+      console.log("Bogus");
+    });
+
+    var constructor = function () { new GulpSSHDeploy(modifiedOptions); }
+    expect(constructor).to.not.throw(DeploymentException);
+  });
+
+  it ("should add a gulp task for transfering the packaged distribution to the server using sftp", () => {
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "port": 22,
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+      "releases_to_keep": 3,
+      "group": "www-glasstower",
+      "permissions": "ugo+rX"
+    };
+
+    new GulpSSHDeploy(modifiedOptions);
+
+    expect(gulp.tasks).to.have.ownProperty('transferDistribution');
+  });
+
+  it ("should appropriately set up the remote release path", () => {
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "port": 22,
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+      "releases_to_keep": 3,
+      "group": "www-glasstower",
+      "permissions": "ugo+rX"
+    };
+
+    var deployer = new GulpSSHDeploy(modifiedOptions);
+    var version = deployer.getPackageJson().version;
+    expect(deployer.getRemoteReleasePath()).to.eq(modifiedOptions.remote_directory + "/releases/" + version);
+  });
+
+  // it ("should add a gulp task for creating a symlink to the current release", () => {
+  //   expect(true).to.eq(false);
+  // });
+  //
+  // it ("should add a gulp task for removing old releases if releases_to_keep was specified and greater than 0", () => {
+  //   expect(true).to.eq(false);
+  // });
+  //
+  // it ("should add a gulp task for setting release group", () => {
+  //   expect(true).to.eq(false);
+  // });
+  //
+  // it ("should add a gulp task for setting release permissions", () => {
+  //   expect(true).to.eq(false);
+  // });
+  //
+  // it ("should add a gulp task for creating appropriate directories on the server", () => {
+  //   expect(true).to.eq(false);
+  // });
+  //
+  // it ("should add a gulp task for packaging and deploying to a server", () => {
+  //   expect(true).to.eq(false);
+  // });
 });
