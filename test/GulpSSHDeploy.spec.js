@@ -139,6 +139,8 @@ describe("gulp-ssh-deploy setup", function() {
   });
 
   it ("should add a gulp task for transfering the packaged distribution to the server using sftp", () => {
+    gulp.tasks = {};
+
     var modifiedOptions = {
       "host": "endor.glasstowerstudios.com",
       "port": 22,
@@ -169,11 +171,15 @@ describe("gulp-ssh-deploy setup", function() {
 
     var deployer = new GulpSSHDeploy(modifiedOptions);
     var version = deployer.getPackageJson().version;
-    expect(deployer.getRemoteReleasePath()).to.eq(modifiedOptions.remote_directory + "/releases/" + version);
+    var expectedReleasesRemotePath = modifiedOptions.remote_directory + '/releases';
+    expect(deployer.getRemoteReleasePath()).to.eq(expectedReleasesRemotePath);
+    expect(deployer.getRemoteReleasePathForCurrentVersion()).to.eq(expectedReleasesRemotePath + '/' + version);
     expect(deployer.getCurrentSymlinkPath()).to.eq(modifiedOptions.remote_directory + "/current");
   });
 
   it ("should add a gulp task for creating a symlink to the current release", () => {
+    gulp.tasks = {};
+
     var modifiedOptions = {
       "host": "endor.glasstowerstudios.com",
       "port": 22,
@@ -189,10 +195,43 @@ describe("gulp-ssh-deploy setup", function() {
 
     expect(gulp.tasks).to.have.ownProperty('createCurrentSymlink');
   });
-  //
-  // it ("should add a gulp task for removing old releases if releases_to_keep was specified and greater than 0", () => {
-  //   expect(true).to.eq(false);
-  // });
+
+  it ("should not add a gulp task for removing old release if releases_to_keep is not specified", () => {
+    gulp.tasks = {};
+
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "port": 22,
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+      "group": "www-glasstower",
+      "permissions": "ugo+rX"
+    };
+
+    new GulpSSHDeploy(modifiedOptions);
+
+    expect(gulp.tasks).to.not.have.ownProperty('removeOldReleases');
+  });
+
+  it ("should add a gulp task for removing old releases if releases_to_keep was specified and greater than 0", () => {
+    gulp.tasks = {};
+
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "port": 22,
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+      "releases_to_keep": 3,
+      "group": "www-glasstower",
+      "permissions": "ugo+rX"
+    };
+
+    new GulpSSHDeploy(modifiedOptions);
+
+    expect(gulp.tasks).to.have.ownProperty('removeOldReleases');
+  });
   //
   // it ("should add a gulp task for setting release group", () => {
   //   expect(true).to.eq(false);
