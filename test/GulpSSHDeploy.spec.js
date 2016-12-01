@@ -155,7 +155,7 @@ describe("gulp-ssh-deploy setup", function() {
     expect(gulp.tasks).to.have.ownProperty('transferDistribution');
   });
 
-  it ("should appropriately set up the remote release path", () => {
+  it ("should appropriately set up the remote paths", () => {
     var modifiedOptions = {
       "host": "endor.glasstowerstudios.com",
       "port": 22,
@@ -170,11 +170,25 @@ describe("gulp-ssh-deploy setup", function() {
     var deployer = new GulpSSHDeploy(modifiedOptions);
     var version = deployer.getPackageJson().version;
     expect(deployer.getRemoteReleasePath()).to.eq(modifiedOptions.remote_directory + "/releases/" + version);
+    expect(deployer.getCurrentSymlinkPath()).to.eq(modifiedOptions.remote_directory + "/current");
   });
 
-  // it ("should add a gulp task for creating a symlink to the current release", () => {
-  //   expect(true).to.eq(false);
-  // });
+  it ("should add a gulp task for creating a symlink to the current release", () => {
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "port": 22,
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+      "releases_to_keep": 3,
+      "group": "www-glasstower",
+      "permissions": "ugo+rX"
+    };
+
+    new GulpSSHDeploy(modifiedOptions);
+
+    expect(gulp.tasks).to.have.ownProperty('createCurrentSymlink');
+  });
   //
   // it ("should add a gulp task for removing old releases if releases_to_keep was specified and greater than 0", () => {
   //   expect(true).to.eq(false);

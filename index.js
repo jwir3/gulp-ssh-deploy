@@ -77,6 +77,7 @@ GulpSSHDeploy.prototype = {
   mCurrentDate: new Date().toISOString(),
   mPackageJson: null,
   mFullDirReleasePath: null,
+  mCurrentSymlinkPath: null,
 
   getPort: function() {
     var self = this;
@@ -96,6 +97,10 @@ GulpSSHDeploy.prototype = {
     return this.mFullDirReleasePath;
   },
 
+  getCurrentSymlinkPath: function() {
+    return this.mCurrentSymlinkPath;
+  },
+
   setupSSHKey: function() {
     var self = this;
     if (!self.mOptions.ssh_key_file
@@ -109,11 +114,25 @@ GulpSSHDeploy.prototype = {
     var self = this;
     var versionFolderName = self.getPackageJson().version;
     self.mFullDirReleasePath = self.mOptions.remote_directory + '/releases/' + versionFolderName;
+    self.mCurrentSymlinkPath = self.mOptions.remote_directory + '/current';
   },
 
   addGulpTasks: function() {
     var self = this;
     self.addTransferDistributionTask();
+    self.addCreateSymlinkTask();
+  },
+
+  addCreateSymlinkTask: function() {
+    var self = this;
+    gulp.task('createCurrentSymlink', ['transferDistribution'], function() {
+      // Create a symlink to the "current" release.
+      return gulpSSH.exec(['rm -f ' + self.mCurrentSymlinkPath,
+                           'ln -s ' + self.mFullDirReleasePath + " " + self.mCurrentSymlinkPath],
+                          { filePath: 'release-' + self.mCurrentDate + '.log'})
+                    .pipe(gulp.dest('logs'));
+    });
+
   },
 
   addTransferDistributionTask: function() {
