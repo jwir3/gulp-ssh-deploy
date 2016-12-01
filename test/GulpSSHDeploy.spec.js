@@ -240,20 +240,22 @@ describe("gulp-ssh-deploy setup", function() {
 
     expect(gulp.tasks).to.have.ownProperty('removeOldReleases');
   });
-  //
-  // it ("should add a gulp task for setting release group", () => {
-  //   expect(true).to.eq(false);
-  // });
-  //
-  // it ("should add a gulp task for setting release permissions", () => {
-  //   expect(true).to.eq(false);
-  // });
-  //
-  // it ("should add a gulp task for creating appropriate directories on the server", () => {
-  //   expect(true).to.eq(false);
-  // });
-  //
-  // it ("should add a gulp task for packaging and deploying to a server", () => {
-  //   expect(true).to.eq(false);
-  // });
+
+  it ("should add a gulp task for setting release group", () => {
+    new GulpSSHDeploy(options);
+
+    expect(gulp.tasks).to.have.ownProperty('setReleaseGroup');
+  });
+
+  it ("should add a gulp task for setting release permissions", () => {
+    new GulpSSHDeploy(options);
+
+    expect(gulp.tasks).to.have.ownProperty('setReleasePermissions');
+  });
+
+  it ("should add a gulp task for deploying to a server", () => {
+    new GulpSSHDeploy(options);
+
+    expect(gulp.tasks).to.have.ownProperty('release');
+  });
 });

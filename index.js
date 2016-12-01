@@ -131,6 +131,16 @@ GulpSSHDeploy.prototype = {
     if (self.mOptions.releases_to_keep && self.mOptions.releases_to_keep > 0) {
       self.addRemoveOldReleasesTask();
     }
+
+    if (self.mOptions.group) {
+      self.addSetReleaseGroupTask();
+    }
+
+    if (self.mOptions.permissions) {
+      self.addSetReleasePermissionsTask();
+    }
+
+    self.addReleaseTask();
   },
 
   addMakeRemoteDirectoriesTask: function() {
@@ -202,5 +212,27 @@ GulpSSHDeploy.prototype = {
       return gulp.src(['./dist/*.deb', './dist/*.dmg'])
                  .pipe(gulpSSH.dest(self.mCurrentVersionReleasePath));
     });
+  },
+
+  addSetReleaseGroupTask: function() {
+    var self = this;
+    gulp.task('setReleaseGroup', ['removeOldReleases'], function() {
+      return gulpSSH.exec(['chgrp -R ' + self.mOptions.group + ' ' + self.mCurrentVersionReleasePath],
+                          {filePath: 'release-' + self.mCurrentDate + '.log'})
+                    .pipe(gulp.dest('logs'));
+    });
+  },
+
+  addSetReleasePermissionsTask: function() {
+    var self = this;
+    gulp.task('setReleasePermissions', ['setReleaseGroup'], function() {
+      return gulpSSH.exec(['chmod -R ' + self.mOptions.permissions + ' ' + self.mCurrentVersionReleasePath],
+                          {filePath: 'release-' + self.mCurrentDate + '.log'})
+                    .pipe(gulp.dest('logs'));
+    });
+  },
+
+  addReleaseTask: function() {
+    gulp.task('release', ['setReleasePermissions']);
   }
 };
