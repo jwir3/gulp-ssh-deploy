@@ -138,6 +138,14 @@ describe("gulp-ssh-deploy setup", function() {
     expect(constructor).to.not.throw(DeploymentException);
   });
 
+  it ("should add a gulp task for creating the remote directories", () => {
+    gulp.tasks = {};
+
+    new GulpSSHDeploy(options);
+
+    expect(gulp.tasks).to.have.ownProperty('makeRemoteDirectories');
+  });
+
   it ("should add a gulp task for transfering the packaged distribution to the server using sftp", () => {
     gulp.tasks = {};
 

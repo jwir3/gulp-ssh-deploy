@@ -125,11 +125,21 @@ GulpSSHDeploy.prototype = {
 
   addGulpTasks: function() {
     var self = this;
+    self.addMakeRemoteDirectoriesTask();
     self.addTransferDistributionTask();
     self.addCreateSymlinkTask();
     if (self.mOptions.releases_to_keep && self.mOptions.releases_to_keep > 0) {
       self.addRemoveOldReleasesTask();
     }
+  },
+
+  addMakeRemoteDirectoriesTask: function() {
+    var self = this;
+    gulp.task('makeRemoteDirectories', function() {
+      return gulpSSH.exec(['mkdir -p ' + self.mCurrentVersionReleasePath],
+                          { filePath: 'release-' + self.mCurrentDate + '.log'})
+                    .pipe(gulp.dest('logs'));
+    });
   },
 
   addRemoveOldReleasesTask: function() {
@@ -161,7 +171,7 @@ GulpSSHDeploy.prototype = {
       rmDirCommands.push(removeCommand);
     }
 
-    gulpSSH.exec(rmDirCommands, { filePath: 'release-' + currentDate + '.log'})
+    gulpSSH.exec(rmDirCommands, { filePath: 'release-' + self.mCurrentDate + '.log'})
            .pipe(gulp.dest('logs'));
   },
 
@@ -190,7 +200,7 @@ GulpSSHDeploy.prototype = {
     gulp.task('transferDistribution', deps, function() {
       // Upload the packaged release to the server.
       return gulp.src(['./dist/*.deb', './dist/*.dmg'])
-                 .pipe(gulpSSH.dest(fullReleaseDirPath));
+                 .pipe(gulpSSH.dest(self.mCurrentVersionReleasePath));
     });
   }
 };
