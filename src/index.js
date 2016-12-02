@@ -1,4 +1,3 @@
-import gulp from 'gulp';
 import * as gulpUtil from 'gulp-util';
 import GulpSSH from 'gulp-ssh';
 import jetpack from 'fs-jetpack';
@@ -27,8 +26,9 @@ DeploymentException.prototype = {
   }
 };
 
-export function GulpSSHDeploy(aOptions) {
+export function GulpSSHDeploy(aOptions, gulp) {
   var self = this;
+  self.mGulp = gulp;
   self.mOptions = aOptions;
 
   if (!self.mOptions) {
@@ -53,7 +53,7 @@ export function GulpSSHDeploy(aOptions) {
 
   if (self.mOptions.package_task) {
     // Before we can set up a dependency, we have to verify the task exists.
-    if (!gulp.tasks.hasOwnProperty(self.mOptions.package_task)) {
+    if (!self.mGulp.tasks.hasOwnProperty(self.mOptions.package_task)) {
       throw new DeploymentException("task not found: ", self.mOptions.package_task);
     }
   }
@@ -66,12 +66,13 @@ export function GulpSSHDeploy(aOptions) {
     self.mOptions.source_files = '.';
   }
 
-  this.mGulpSSH = new GulpSSH({
+  self.setupSSHKey();
+
+  self.mGulpSSH = new GulpSSH({
     ignoreErrors: false,
     sshConfig: self.mOptions
   });
 
-  self.setupSSHKey();
   self.setupPaths();
   self.addGulpTasks();
 }
@@ -79,6 +80,7 @@ export function GulpSSHDeploy(aOptions) {
 GulpSSHDeploy.prototype = {
   mGulpSSH: null,
   mOptions: null,
+  mGulp: null,
   mCurrentDate: new Date().toISOString(),
   mPackageJson: null,
   mRemoteReleaseDirectory: null,
@@ -125,6 +127,8 @@ GulpSSHDeploy.prototype = {
       throw new DeploymentException("Unable to find ssh key:",
                                     self.mOptions.ssh_key_file);
     }
+
+    self.mOptions.privateKey = fs.readFileSync(self.mOptions.ssh_key_file.replace("~", os.homedir));
   },
 
   setupPaths: function() {
@@ -157,30 +161,30 @@ GulpSSHDeploy.prototype = {
 
   addMakeRemoteDirectoriesTask: function() {
     var self = this;
-    gulp.task('makeRemoteDirectories', function() {
-      return gulpSSH.exec(['mkdir -p ' + self.mCurrentVersionReleasePath],
-                          { filePath: 'release-' + self.mCurrentDate + '.log'})
-                    .pipe(gulp.dest('logs'));
+    self.mGulp.task('makeRemoteDirectories', function() {
+      return self.mGulpSSH.exec(['mkdir -p ' + self.mCurrentVersionReleasePath],
+                                { filePath: 'release-' + self.mCurrentDate + '.log'})
+                          .pipe(self.mGulp.dest('logs'));
     });
   },
 
   addRemoveOldReleasesTask: function() {
     var self = this;
-    gulp.task('removeOldReleases', ['transferDistribution'], function() {
+    self.mGulp.task('removeOldReleases', ['transferDistribution'], function() {
       var toRemove = [];
 
       // Delete all old releases, as specified in the configuration.
-      return gulpSSH.exec(['ls ' + self.mRemoteReleaseDirectory])
-                    .on ('ssh2Data', (chunk) => {
-                      let directories = chunk.toString('utf8').split('\n');
-                      var lastDir = directories.pop(); // Last directory is an empty newline
-                      var index = 0;
-                      for (var index = 0; index < directories.length - (self.mOptions.releases_to_keep); index++) {
-                        toRemove.push(directories[index]);
-                      }
+      return self.mGulpSSH.exec(['ls ' + self.mRemoteReleaseDirectory])
+                          .on ('ssh2Data', (chunk) => {
+                            let directories = chunk.toString('utf8').split('\n');
+                            var lastDir = directories.pop(); // Last directory is an empty newline
+                            var index = 0;
+                            for (var index = 0; index < directories.length - (self.mOptions.releases_to_keep); index++) {
+                              toRemove.push(directories[index]);
+                            }
 
-                      self.removeRemoteReleaseDirectories(toRemove);
-                    });
+                            self.removeRemoteReleaseDirectories(toRemove);
+                          });
     });
   },
 
@@ -193,20 +197,19 @@ GulpSSHDeploy.prototype = {
       rmDirCommands.push(removeCommand);
     }
 
-    gulpSSH.exec(rmDirCommands, { filePath: 'release-' + self.mCurrentDate + '.log'})
-           .pipe(gulp.dest('logs'));
+    self.mGulpSSH.exec(rmDirCommands, { filePath: 'release-' + self.mCurrentDate + '.log'})
+                 .pipe(self.mGulp.dest('logs'));
   },
 
   addCreateSymlinkTask: function() {
     var self = this;
-    gulp.task('createCurrentSymlink', ['transferDistribution'], function() {
+    self.mGulp.task('createCurrentSymlink', ['transferDistribution'], function() {
       // Create a symlink to the "current" release.
-      return gulpSSH.exec(['rm -f ' + self.mCurrentSymlinkPath,
-                           'ln -s ' + self.mCurrentVersionReleasePath + " " + self.mCurrentSymlinkPath],
-                          { filePath: 'release-' + self.mCurrentDate + '.log'})
-                    .pipe(gulp.dest('logs'));
+      return self.mGulpSSH.exec(['rm -f ' + self.mCurrentSymlinkPath,
+                                 'ln -s ' + self.mCurrentVersionReleasePath + " " + self.mCurrentSymlinkPath],
+                                { filePath: 'release-' + self.mCurrentDate + '.log'})
+                          .pipe(self.mGulp.dest('logs'));
     });
-
   },
 
   addTransferDistributionTask: function() {
@@ -219,32 +222,33 @@ GulpSSHDeploy.prototype = {
 
     // TODO: Right now, this only transfers .deb and .dmg files. We should add
     //       a parameter so it can transfer any files, given a set of regexs.
-    gulp.task('transferDistribution', deps, function() {
+    self.mGulp.task('transferDistribution', deps, function() {
       // Upload the packaged release to the server.
-      return gulp.src(self.mOptions.source_files)
-                 .pipe(gulpSSH.dest(self.mCurrentVersionReleasePath));
+      return self.mGulp.src(self.mOptions.source_files)
+                       .pipe(self.mGulpSSH.dest(self.mCurrentVersionReleasePath));
     });
   },
 
   addSetReleaseGroupTask: function() {
     var self = this;
-    gulp.task('setReleaseGroup', ['removeOldReleases'], function() {
-      return gulpSSH.exec(['chgrp -R ' + self.mOptions.group + ' ' + self.mCurrentVersionReleasePath],
-                          {filePath: 'release-' + self.mCurrentDate + '.log'})
-                    .pipe(gulp.dest('logs'));
+    self.mGulp.task('setReleaseGroup', ['removeOldReleases'], function() {
+      return self.mGulpSSH.exec(['chgrp -R ' + self.mOptions.group + ' ' + self.mCurrentVersionReleasePath],
+                                {filePath: 'release-' + self.mCurrentDate + '.log'})
+                          .pipe(self.mGulp.dest('logs'));
     });
   },
 
   addSetReleasePermissionsTask: function() {
     var self = this;
-    gulp.task('setReleasePermissions', ['setReleaseGroup'], function() {
-      return gulpSSH.exec(['chmod -R ' + self.mOptions.permissions + ' ' + self.mCurrentVersionReleasePath],
-                          {filePath: 'release-' + self.mCurrentDate + '.log'})
-                    .pipe(gulp.dest('logs'));
+    self.mGulp.task('setReleasePermissions', ['setReleaseGroup'], function() {
+      return self.mGulpSSH.exec(['chmod -R ' + self.mOptions.permissions + ' ' + self.mCurrentVersionReleasePath],
+                                {filePath: 'release-' + self.mCurrentDate + '.log'})
+                          .pipe(self.mGulp.dest('logs'));
     });
   },
 
   addReleaseTask: function() {
-    gulp.task('release', ['setReleasePermissions']);
+    var self = this;
+    self.mGulp.task('release', ['setReleasePermissions']);
   }
 };

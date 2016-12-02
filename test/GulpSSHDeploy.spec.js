@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { GulpSSHDeploy, DeploymentException } from '../index';
+import { GulpSSHDeploy, DeploymentException } from '../dist/index';
 import jetpack from 'fs-jetpack';
 import gulp from 'gulp';
 import Filehound from 'filehound';
@@ -18,7 +18,7 @@ var options = {
 describe("gulp-ssh-deploy setup", function() {
   it ("should correctly set up an instance of GulpSSHDeploy that has package json information", () => {
     let expectedPackageJsonVersion = jetpack.read('package.json', 'json').version;
-    let deployer = new GulpSSHDeploy(options);
+    let deployer = new GulpSSHDeploy(options, gulp);
     let packageJson = deployer.getPackageJson();
     expect(packageJson.version).to.eq(expectedPackageJsonVersion);
   });
@@ -40,7 +40,7 @@ describe("gulp-ssh-deploy setup", function() {
       "permissions": "ugo+rX"
     };
 
-    var constructor = function() { return new GulpSSHDeploy(modifiedOptions); }
+    var constructor = function() { return new GulpSSHDeploy(modifiedOptions, gulp); }
     expect(constructor).to.throw(DeploymentException);
   });
 
@@ -62,7 +62,7 @@ describe("gulp-ssh-deploy setup", function() {
       "ssh_key_file": "~/.ssh/id_rsa",
     };
 
-    var constructor = function() { return new GulpSSHDeploy(modifiedOptions); }
+    var constructor = function() { return new GulpSSHDeploy(modifiedOptions, gulp); }
     expect(constructor).to.throw(DeploymentException);
   });
 
@@ -84,7 +84,7 @@ describe("gulp-ssh-deploy setup", function() {
       "username": "scottj",
     };
 
-    var constructor = function() { return new GulpSSHDeploy(modifiedOptions); }
+    var constructor = function() { return new GulpSSHDeploy(modifiedOptions, gulp); }
     expect(constructor).to.throw(DeploymentException);
   });
 
@@ -96,7 +96,7 @@ describe("gulp-ssh-deploy setup", function() {
       "ssh_key_file": "~/.ssh/id_rsa",
     };
 
-    var deployer = new GulpSSHDeploy(modifiedOptions);
+    var deployer = new GulpSSHDeploy(modifiedOptions, gulp);
     expect(deployer).to.not.be.null;
     expect(deployer.getPort()).to.eq(22);
   });
@@ -114,7 +114,7 @@ describe("gulp-ssh-deploy setup", function() {
       "package_task": "packageBlahBlahGarbage"
     };
 
-    var constructor = function () { new GulpSSHDeploy(modifiedOptions); }
+    var constructor = function () { new GulpSSHDeploy(modifiedOptions, gulp); }
     expect(constructor).to.throw(DeploymentException);
   });
 
@@ -135,14 +135,14 @@ describe("gulp-ssh-deploy setup", function() {
       console.log("Bogus");
     });
 
-    var constructor = function () { new GulpSSHDeploy(modifiedOptions); }
+    var constructor = function () { new GulpSSHDeploy(modifiedOptions, gulp); }
     expect(constructor).to.not.throw(DeploymentException);
   });
 
   it ("should add a gulp task for creating the remote directories", () => {
     gulp.tasks = {};
 
-    new GulpSSHDeploy(options);
+    new GulpSSHDeploy(options, gulp);
 
     expect(gulp.tasks).to.have.ownProperty('makeRemoteDirectories');
   });
@@ -161,7 +161,7 @@ describe("gulp-ssh-deploy setup", function() {
       "permissions": "ugo+rX"
     };
 
-    new GulpSSHDeploy(modifiedOptions);
+    new GulpSSHDeploy(modifiedOptions, gulp);
 
     expect(gulp.tasks).to.have.ownProperty('transferDistribution');
   });
@@ -178,7 +178,7 @@ describe("gulp-ssh-deploy setup", function() {
       "permissions": "ugo+rX"
     };
 
-    var deployer = new GulpSSHDeploy(modifiedOptions);
+    var deployer = new GulpSSHDeploy(modifiedOptions, gulp);
     var version = deployer.getPackageJson().version;
     var expectedReleasesRemotePath = modifiedOptions.remote_directory + '/releases';
     expect(deployer.getRemoteReleasePath()).to.eq(expectedReleasesRemotePath);
@@ -200,7 +200,7 @@ describe("gulp-ssh-deploy setup", function() {
       "permissions": "ugo+rX"
     };
 
-    new GulpSSHDeploy(modifiedOptions);
+    new GulpSSHDeploy(modifiedOptions, gulp);
 
     expect(gulp.tasks).to.have.ownProperty('createCurrentSymlink');
   });
@@ -218,7 +218,7 @@ describe("gulp-ssh-deploy setup", function() {
       "permissions": "ugo+rX"
     };
 
-    new GulpSSHDeploy(modifiedOptions);
+    new GulpSSHDeploy(modifiedOptions, gulp);
 
     expect(gulp.tasks).to.not.have.ownProperty('removeOldReleases');
   });
@@ -237,25 +237,25 @@ describe("gulp-ssh-deploy setup", function() {
       "permissions": "ugo+rX"
     };
 
-    new GulpSSHDeploy(modifiedOptions);
+    new GulpSSHDeploy(modifiedOptions, gulp);
 
     expect(gulp.tasks).to.have.ownProperty('removeOldReleases');
   });
 
   it ("should add a gulp task for setting release group", () => {
-    new GulpSSHDeploy(options);
+    new GulpSSHDeploy(options, gulp);
 
     expect(gulp.tasks).to.have.ownProperty('setReleaseGroup');
   });
 
   it ("should add a gulp task for setting release permissions", () => {
-    new GulpSSHDeploy(options);
+    new GulpSSHDeploy(options, gulp);
 
     expect(gulp.tasks).to.have.ownProperty('setReleasePermissions');
   });
 
   it ("should add a gulp task for deploying to a server", () => {
-    new GulpSSHDeploy(options);
+    new GulpSSHDeploy(options, gulp);
 
     expect(gulp.tasks).to.have.ownProperty('release');
   });
@@ -276,7 +276,7 @@ describe("gulp-ssh-deploy setup", function() {
     let expectedFiles = Filehound.create()
                                  .paths("test")
                                  .findSync();
-    let deployer = new GulpSSHDeploy(modifiedOptions);
+    let deployer = new GulpSSHDeploy(modifiedOptions, gulp);
     let filesToCopy = deployer.getFilesToCopy();
     expect(filesToCopy).to.have.lengthOf(expectedFiles.length);
     expect(filesToCopy).to.include.members(expectedFiles);
