@@ -4,6 +4,7 @@ import GulpSSH from 'gulp-ssh';
 import jetpack from 'fs-jetpack';
 import fs from 'fs';
 import os from 'os';
+import Filehound from 'filehound';
 
 export function DeploymentException(message, highlightedText) {
   this.mMessage = message;
@@ -61,6 +62,10 @@ export function GulpSSHDeploy(aOptions) {
     self.mOptions.package_json_file_path = 'package.json';
   }
 
+  if (!self.mOptions.source_files) {
+    self.mOptions.source_files = '.';
+  }
+
   this.mGulpSSH = new GulpSSH({
     ignoreErrors: false,
     sshConfig: self.mOptions
@@ -104,6 +109,13 @@ GulpSSHDeploy.prototype = {
 
   getCurrentSymlinkPath: function() {
     return this.mCurrentSymlinkPath;
+  },
+
+  getFilesToCopy: function() {
+    var self = this;
+    return Filehound.create()
+                    .paths(self.mOptions.source_files)
+                    .findSync();
   },
 
   setupSSHKey: function() {
@@ -209,7 +221,7 @@ GulpSSHDeploy.prototype = {
     //       a parameter so it can transfer any files, given a set of regexs.
     gulp.task('transferDistribution', deps, function() {
       // Upload the packaged release to the server.
-      return gulp.src(['./dist/*.deb', './dist/*.dmg'])
+      return gulp.src(self.mOptions.source_files)
                  .pipe(gulpSSH.dest(self.mCurrentVersionReleasePath));
     });
   },

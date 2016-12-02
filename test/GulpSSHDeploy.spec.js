@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import { GulpSSHDeploy, DeploymentException } from '../index';
 import jetpack from 'fs-jetpack';
 import gulp from 'gulp';
+import Filehound from 'filehound';
 
 var options = {
   "host": "endor.glasstowerstudios.com",
@@ -257,5 +258,27 @@ describe("gulp-ssh-deploy setup", function() {
     new GulpSSHDeploy(options);
 
     expect(gulp.tasks).to.have.ownProperty('release');
+  });
+
+  it ('should plan to copy all files in the test directory for a source specification of "test"', () => {
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "port": 22,
+      "source_files": "test",
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+      "releases_to_keep": 3,
+      "group": "www-glasstower",
+      "permissions": "ugo+rX"
+    };
+
+    let expectedFiles = Filehound.create()
+                                 .paths("test")
+                                 .findSync();
+    let deployer = new GulpSSHDeploy(modifiedOptions);
+    let filesToCopy = deployer.getFilesToCopy();
+    expect(filesToCopy).to.have.lengthOf(expectedFiles.length);
+    expect(filesToCopy).to.include.members(expectedFiles);
   });
 });
