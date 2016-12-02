@@ -1,6 +1,6 @@
 {
   "name": "gulp-ssh-deploy",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "A plugin to gulp that allows for deploying releases via SSH.",
   "main": "dist/index.js",
   "scripts": {
