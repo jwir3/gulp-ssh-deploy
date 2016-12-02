@@ -250,9 +250,25 @@ describe("gulp-ssh-deploy setup", function() {
     expect(gulp.tasks).to.have.ownProperty('setReleaseGroup');
   });
 
-  // it ("should not add a gulp task for setting release group if 'group' is not present in the options", () => {
-  //   // The gulp task 'setReleasePermissions' should depend on 'transferDistribution'
-  // });
+  it ("should not add a gulp task for setting release group if 'group' is not present in the options", () => {
+    gulp.tasks = {};
+
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "port": 22,
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+      "permissions": "ugo+rX",
+      "releases_to_keep": 3
+    };
+
+    new GulpSSHDeploy(modifiedOptions, gulp);
+
+    expect(gulp.tasks).to.not.have.ownProperty('setReleaseGroup');
+    expect(gulp.tasks).to.have.ownProperty('setReleasePermissions');
+    expect(gulp.tasks.setReleasePermissions.dep).to.include.members(['transferDistribution']);
+  });
 
   it ("should add a gulp task for setting release permissions", () => {
     new GulpSSHDeploy(options, gulp);
@@ -260,9 +276,45 @@ describe("gulp-ssh-deploy setup", function() {
     expect(gulp.tasks).to.have.ownProperty('setReleasePermissions');
   });
 
-  // it ("should not add a gulp task for setting release permissions if 'permissions' is not present in the options", () => {
-  //   // The gulp task 'release' should depend on 'setReleaseGroup'
-  // });
+  it ("should not add a gulp task for setting release permissions if 'permissions' is not present in the options", () => {
+    gulp.tasks = {};
+
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "port": 22,
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+      "group": "www-glasstower",
+      "releases_to_keep": 3
+    };
+
+    new GulpSSHDeploy(modifiedOptions, gulp);
+
+    expect(gulp.tasks).to.not.have.ownProperty('setReleasePermissions');
+    expect(gulp.tasks).to.have.ownProperty('setReleaseGroup');
+    expect(gulp.tasks.release.dep).to.include.members(['setReleaseGroup']);
+  });
+
+  it ("should not add gulp tasks for setting release permissions or groups if both permission and group are not present in the options", () => {
+    gulp.tasks = {};
+
+    var modifiedOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "port": 22,
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+      "releases_to_keep": 3
+    };
+
+    new GulpSSHDeploy(modifiedOptions, gulp);
+
+    expect(gulp.tasks).to.not.have.ownProperty('setReleasePermissions');
+    expect(gulp.tasks).to.not.have.ownProperty('setReleaseGroup');
+    expect(gulp.tasks.release.dep).to.include.members(['transferDistribution']);
+    expect(gulp.tasks.release.dep).to.not.include.members(['setReleasePermissions', 'setReleaseGroup']);
+  });
 
   it ("should add a gulp task for deploying to a server", () => {
     new GulpSSHDeploy(options, gulp);

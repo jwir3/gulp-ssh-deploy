@@ -247,7 +247,14 @@ GulpSSHDeploy.prototype = {
 
   addSetReleasePermissionsTask: function() {
     var self = this;
-    self.mGulp.task('setReleasePermissions', ['setReleaseGroup'], function() {
+    var dep = [];
+    if (self.mOptions.group && self.mOptions.group.length > 0) {
+      dep = ['setReleaseGroup'];
+    } else {
+      dep = ['transferDistribution'];
+    }
+
+    self.mGulp.task('setReleasePermissions', dep, function() {
       return self.mGulpSSH.exec(['chmod -R ' + self.mOptions.permissions + ' ' + self.mCurrentVersionReleasePath],
                                 {filePath: 'release-' + self.mCurrentDate + '.log'})
                           .pipe(self.mGulp.dest('logs'));
@@ -256,6 +263,19 @@ GulpSSHDeploy.prototype = {
 
   addReleaseTask: function() {
     var self = this;
-    self.mGulp.task('release', ['setReleasePermissions']);
+    var dep = [];
+    if (self.mOptions.permission && self.mOptions.permission.length > 0) {
+      dep = ['setReleasePermissions'];
+    }
+
+    if (self.mOptions.group && self.mOptions.group.length > 0) {
+      dep.push('setReleaseGroup');
+    }
+
+    if (dep.length == 0) {
+      dep.push('transferDistribution');
+    }
+
+    self.mGulp.task('release', dep);
   }
 };
