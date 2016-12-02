@@ -231,7 +231,14 @@ GulpSSHDeploy.prototype = {
 
   addSetReleaseGroupTask: function() {
     var self = this;
-    self.mGulp.task('setReleaseGroup', ['removeOldReleases'], function() {
+    var dep = [];
+    if (self.mOptions.releases_to_keep && self.mOptions.releases_to_keep > 0) {
+      dep = ['removeOldReleases'];
+    } else {
+      dep = ['transferDistribution'];
+    }
+
+    self.mGulp.task('setReleaseGroup', dep, function() {
       return self.mGulpSSH.exec(['chgrp -R ' + self.mOptions.group + ' ' + self.mCurrentVersionReleasePath],
                                 {filePath: 'release-' + self.mCurrentDate + '.log'})
                           .pipe(self.mGulp.dest('logs'));
@@ -240,7 +247,14 @@ GulpSSHDeploy.prototype = {
 
   addSetReleasePermissionsTask: function() {
     var self = this;
-    self.mGulp.task('setReleasePermissions', ['setReleaseGroup'], function() {
+    var dep = [];
+    if (self.mOptions.group && self.mOptions.group.length > 0) {
+      dep = ['setReleaseGroup'];
+    } else {
+      dep = ['transferDistribution'];
+    }
+
+    self.mGulp.task('setReleasePermissions', dep, function() {
       return self.mGulpSSH.exec(['chmod -R ' + self.mOptions.permissions + ' ' + self.mCurrentVersionReleasePath],
                                 {filePath: 'release-' + self.mCurrentDate + '.log'})
                           .pipe(self.mGulp.dest('logs'));
@@ -249,6 +263,19 @@ GulpSSHDeploy.prototype = {
 
   addReleaseTask: function() {
     var self = this;
-    self.mGulp.task('release', ['setReleasePermissions']);
+    var dep = [];
+    if (self.mOptions.permission && self.mOptions.permission.length > 0) {
+      dep = ['setReleasePermissions'];
+    }
+
+    if (self.mOptions.group && self.mOptions.group.length > 0) {
+      dep.push('setReleaseGroup');
+    }
+
+    if (dep.length == 0) {
+      dep.push('transferDistribution');
+    }
+
+    self.mGulp.task('release', dep);
   }
 };
