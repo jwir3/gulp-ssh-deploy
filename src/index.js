@@ -231,7 +231,14 @@ GulpSSHDeploy.prototype = {
 
   addSetReleaseGroupTask: function() {
     var self = this;
-    self.mGulp.task('setReleaseGroup', ['removeOldReleases'], function() {
+    var dep = [];
+    if (self.mOptions.releases_to_keep && self.mOptions.releases_to_keep > 0) {
+      dep = ['removeOldReleases'];
+    } else {
+      dep = ['transferDistribution'];
+    }
+
+    self.mGulp.task('setReleaseGroup', dep, function() {
       return self.mGulpSSH.exec(['chgrp -R ' + self.mOptions.group + ' ' + self.mCurrentVersionReleasePath],
                                 {filePath: 'release-' + self.mCurrentDate + '.log'})
                           .pipe(self.mGulp.dest('logs'));

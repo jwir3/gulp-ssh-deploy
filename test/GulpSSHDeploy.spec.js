@@ -12,7 +12,7 @@ var options = {
   "ssh_key_file": "~/.ssh/id_rsa",
   "releases_to_keep": 3,
   "group": "www-glasstower",
-  "permissions": "ugo+rX"
+  "permissions": "ugo+rX",
 };
 
 describe("gulp-ssh-deploy setup", function() {
@@ -205,7 +205,7 @@ describe("gulp-ssh-deploy setup", function() {
     expect(gulp.tasks).to.have.ownProperty('createCurrentSymlink');
   });
 
-  it ("should not add a gulp task for removing old release if releases_to_keep is not specified", () => {
+  it ("should not add a gulp task for removing old releases if releases_to_keep is not specified", () => {
     gulp.tasks = {};
 
     var modifiedOptions = {
@@ -221,6 +221,8 @@ describe("gulp-ssh-deploy setup", function() {
     new GulpSSHDeploy(modifiedOptions, gulp);
 
     expect(gulp.tasks).to.not.have.ownProperty('removeOldReleases');
+    expect(gulp.tasks).to.have.ownProperty('setReleaseGroup');
+    expect(gulp.tasks.setReleaseGroup.dep).to.include.members(['transferDistribution']);
   });
 
   it ("should add a gulp task for removing old releases if releases_to_keep was specified and greater than 0", () => {
@@ -242,17 +244,25 @@ describe("gulp-ssh-deploy setup", function() {
     expect(gulp.tasks).to.have.ownProperty('removeOldReleases');
   });
 
-  it ("should add a gulp task for setting release group", () => {
+  it ("should add a gulp task for setting release group if 'group' is present in the options", () => {
     new GulpSSHDeploy(options, gulp);
 
     expect(gulp.tasks).to.have.ownProperty('setReleaseGroup');
   });
+
+  // it ("should not add a gulp task for setting release group if 'group' is not present in the options", () => {
+  //   // The gulp task 'setReleasePermissions' should depend on 'transferDistribution'
+  // });
 
   it ("should add a gulp task for setting release permissions", () => {
     new GulpSSHDeploy(options, gulp);
 
     expect(gulp.tasks).to.have.ownProperty('setReleasePermissions');
   });
+
+  // it ("should not add a gulp task for setting release permissions if 'permissions' is not present in the options", () => {
+  //   // The gulp task 'release' should depend on 'setReleaseGroup'
+  // });
 
   it ("should add a gulp task for deploying to a server", () => {
     new GulpSSHDeploy(options, gulp);
