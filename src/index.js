@@ -14,6 +14,9 @@ DeploymentException.prototype = {
   mMessage: null,
   mHighlightedText: null,
 
+  /**
+   * Print this exception to the gulp log, with some color highlighting.
+   */
   printWarning: function() {
     var self = this;
     if (!self.mHighlightedText) {
@@ -26,6 +29,13 @@ DeploymentException.prototype = {
   }
 };
 
+/**
+ * Create a new GulpSSHDeploy object, which will, in turn, create the appropriate
+ * gulp tasks associated with deploying releases.
+ *
+ * @param {object} aOptions The configuration to setup deployments (see README).
+ * @param {object} gulp     A gulp object within which tasks should be created.
+ */
 export function GulpSSHDeploy(aOptions, gulp) {
   var self = this;
   self.mGulp = gulp;
@@ -66,15 +76,15 @@ export function GulpSSHDeploy(aOptions, gulp) {
     self.mOptions.source_files = '.';
   }
 
-  self.setupSSHKey();
+  self._setupSSHKey();
 
   self.mGulpSSH = new GulpSSH({
     ignoreErrors: false,
     sshConfig: self.mOptions
   });
 
-  self.setupPaths();
-  self.addGulpTasks();
+  self._setupPaths();
+  self._addGulpTasks();
 }
 
 GulpSSHDeploy.prototype = {
@@ -87,11 +97,22 @@ GulpSSHDeploy.prototype = {
   mCurrentVersionReleasePath: null,
   mCurrentSymlinkPath: null,
 
+  /**
+   * Retrieve the port of this {GulpSSHDeploy} object.
+   *
+   * @return {integer} The port of the remote host to use for SSH connections.
+   */
   getPort: function() {
     var self = this;
     return self.mOptions.port;
   },
 
+  /**
+   * Retrieve the package.json file, as a JSON object.
+   *
+   * @return {object} The object containing the contents of the package.json file
+   *                  specified in the options structure.
+   */
   getPackageJson: function() {
     var self = this;
     if (!self.mPackageJson) {
@@ -101,18 +122,45 @@ GulpSSHDeploy.prototype = {
     return self.mPackageJson;
   },
 
+  /**
+   * Retrieve the root path for which all deployments should be placed on the
+   * remote host.
+   *
+   * @return {string} The location on the remote host where the deployment will
+   *                  be placed.
+   */
   getRemoteReleasePath: function() {
     return this.mRemoteReleaseDirectory;
   },
 
+  /**
+   * Retrieve the path on the remote host for the current release.
+   *
+   * @return {string} The path on the remote host for the current release. This
+   *                  will always be a subdirectory of the directory returned by
+   *                  {@link #getRemoteReleasePath}.
+   */
   getRemoteReleasePathForCurrentVersion: function() {
     return this.mCurrentVersionReleasePath;
   },
 
+  /**
+   * Retrieve the path to the symlink called 'current' which points to the latest
+   * release on the remote host.
+   *
+   * @return {string} The path, on the remote host, of the symlink to the
+   *                  latest release.
+   */
   getCurrentSymlinkPath: function() {
     return this.mCurrentSymlinkPath;
   },
 
+  /**
+   * Retrieve a set of files which should be copied to the remote host.
+   *
+   * @return {array} A list of files, relative to the current project path,
+   *                 that should be copied to the remote host.
+   */
   getFilesToCopy: function() {
     var self = this;
     return Filehound.create()
@@ -120,7 +168,7 @@ GulpSSHDeploy.prototype = {
                     .findSync();
   },
 
-  setupSSHKey: function() {
+  _setupSSHKey: function() {
     var self = this;
     if (!self.mOptions.ssh_key_file
         || !fs.existsSync(self.mOptions.ssh_key_file.replace('~', os.homedir))) {
@@ -131,7 +179,7 @@ GulpSSHDeploy.prototype = {
     self.mOptions.privateKey = fs.readFileSync(self.mOptions.ssh_key_file.replace("~", os.homedir));
   },
 
-  setupPaths: function() {
+  _setupPaths: function() {
     var self = this;
     var versionFolderName = self.getPackageJson().version;
     self.mRemoteReleaseDirectory = self.mOptions.remote_directory + '/releases';
@@ -139,27 +187,27 @@ GulpSSHDeploy.prototype = {
     self.mCurrentSymlinkPath = self.mOptions.remote_directory + '/current';
   },
 
-  addGulpTasks: function() {
+  _addGulpTasks: function() {
     var self = this;
-    self.addMakeRemoteDirectoriesTask();
-    self.addTransferDistributionTask();
-    self.addCreateSymlinkTask();
+    self._addMakeRemoteDirectoriesTask();
+    self._addTransferDistributionTask();
+    self._addCreateSymlinkTask();
     if (self.mOptions.releases_to_keep && self.mOptions.releases_to_keep > 0) {
-      self.addRemoveOldReleasesTask();
+      self._addRemoveOldReleasesTask();
     }
 
     if (self.mOptions.group) {
-      self.addSetReleaseGroupTask();
+      self._addSetReleaseGroupTask();
     }
 
     if (self.mOptions.permissions) {
-      self.addSetReleasePermissionsTask();
+      self._addSetReleasePermissionsTask();
     }
 
-    self.addReleaseTask();
+    self._addReleaseTask();
   },
 
-  addMakeRemoteDirectoriesTask: function() {
+  _addMakeRemoteDirectoriesTask: function() {
     var self = this;
     self.mGulp.task('makeRemoteDirectories', function() {
       return self.mGulpSSH.exec(['mkdir -p ' + self.mCurrentVersionReleasePath],
@@ -168,7 +216,7 @@ GulpSSHDeploy.prototype = {
     });
   },
 
-  addRemoveOldReleasesTask: function() {
+  _addRemoveOldReleasesTask: function() {
     var self = this;
     self.mGulp.task('removeOldReleases', ['transferDistribution'], function() {
       var toRemove = [];
@@ -183,12 +231,12 @@ GulpSSHDeploy.prototype = {
                               toRemove.push(directories[index]);
                             }
 
-                            self.removeRemoteReleaseDirectories(toRemove);
+                            self._removeRemoteReleaseDirectories(toRemove);
                           });
     });
   },
 
-  removeRemoteReleaseDirectories: function(dirs) {
+  _removeRemoteReleaseDirectories: function(dirs) {
     var self = this;
     var rmDirCommands = [];
     for (var dirIndex in dirs) {
@@ -201,7 +249,7 @@ GulpSSHDeploy.prototype = {
                  .pipe(self.mGulp.dest('logs'));
   },
 
-  addCreateSymlinkTask: function() {
+  _addCreateSymlinkTask: function() {
     var self = this;
     self.mGulp.task('createCurrentSymlink', ['transferDistribution'], function() {
       // Create a symlink to the "current" release.
@@ -212,7 +260,7 @@ GulpSSHDeploy.prototype = {
     });
   },
 
-  addTransferDistributionTask: function() {
+  _addTransferDistributionTask: function() {
     var self = this;
     var deps = [];
     // var deps = ['makeRemotePath'];
@@ -229,7 +277,7 @@ GulpSSHDeploy.prototype = {
     });
   },
 
-  addSetReleaseGroupTask: function() {
+  _addSetReleaseGroupTask: function() {
     var self = this;
     var dep = [];
     if (self.mOptions.releases_to_keep && self.mOptions.releases_to_keep > 0) {
@@ -245,7 +293,7 @@ GulpSSHDeploy.prototype = {
     });
   },
 
-  addSetReleasePermissionsTask: function() {
+  _addSetReleasePermissionsTask: function() {
     var self = this;
     var dep = [];
     if (self.mOptions.group && self.mOptions.group.length > 0) {
@@ -261,7 +309,7 @@ GulpSSHDeploy.prototype = {
     });
   },
 
-  addReleaseTask: function() {
+  _addReleaseTask: function() {
     var self = this;
     var dep = [];
     if (self.mOptions.permission && self.mOptions.permission.length > 0) {
