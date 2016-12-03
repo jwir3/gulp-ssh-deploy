@@ -38,7 +38,8 @@ var options = {
   "ssh_key_file": "/path/to/your/local/ssh/key",
   "releases_to_keep": 3,
   "group": "remote-group",
-  "permissions": "ugo+rX"
+  "permissions": "ugo+rX",
+  "package_task": "someTask"
 };
 
 new GulpSSHDeploy(options, gulp);
@@ -73,6 +74,9 @@ If specified, the deployed release will be `chgrp`'ed to this group. The group m
 
 #### permission (Optional, default = null)
 If specified, the deployed release folder will be `chmod`'ed to this set of permissions. May be specified in human-readable format (e.g. `ug+rwX`) or octal (e.g. `0777`).
+
+#### package_task (Optional, default = '')
+The task to run prior to transferring the distribution. This task should bundle your distribution and prepare it for transfer to the remote host. This will be added as a dependency to the `release` task.
 
 ### Gulp Tasks
 Setup and configuration will create up to seven gulp tasks:
