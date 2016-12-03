@@ -99,3 +99,16 @@ Removes old releases to keep a maximum of `releases_to_keep` releases on the rem
 Performs all of the above.
 
 **Note**: The `transferDistribution` task (and thus the `release` task) depend on a gulp task called `package`, which should build and package your release prior to sending it to the remote host. If this task does not exist, `release` and `transferDistribution` will fail.
+
+Problems/FAQ
+-------------
+
+- **The GulpSSHDeploy constructor is throwing a `DeploymentException`**
+  - When the GulpSSHDeploy constructor encounters an invalid configuration value, or a required configuration value that doesn't exist, it throws this exception. You can get more information from the exception (and have it print to the gulp logs) by wrapping the call to the constructor in a try/catch block:
+  ```javascript
+    try {
+      let deployer = new GulpSSHDeploy(options, gulp);
+    } catch (exception) {
+      exception.printWarning();
+    }
+  ```
