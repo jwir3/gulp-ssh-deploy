@@ -312,7 +312,6 @@ GulpSSHDeploy.prototype = {
   _addReleaseTask: function() {
     var self = this;
     var dep = [];
-    console.log(self.mOptions);
     if (self.mOptions.permissions && self.mOptions.permissions.length > 0) {
       dep = ['setReleasePermissions'];
     }
