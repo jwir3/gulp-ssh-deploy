@@ -3,6 +3,12 @@ Contributing Information
 
 First, _thank you_ for wanting to contribute to gulp-ssh-deploy. This should serve as a brief guide to contributing to the project. If you have any questions, please feel free to send a message to [@jwir3](mailto:jaywir3@gmail.com) for more information.
 
+Contact Information
+-------------------
+  - [Slack Channel](slack://channel?id=C3BLNSYKY&team=T33DNEFHN) (Preferred)
+  - [Email](mailto:jaywir3@gmail.com)
+  - [Twitter](https://twitter.com/jwir3)
+
 Workflow
 ---------
 
