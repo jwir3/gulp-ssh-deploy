@@ -73,7 +73,7 @@ If specified, this will indicate how many consecutive releases should be kept ar
 #### group (Optional, default = null)
 If specified, the deployed release will be `chgrp`'ed to this group. The group must exist on the remote host.
 
-#### permission (Optional, default = null)
+#### permissions (Optional, default = null)
 If specified, the deployed release folder will be `chmod`'ed to this set of permissions. May be specified in human-readable format (e.g. `ug+rwX`) or octal (e.g. `0777`).
 
 #### package_task (Optional, default = '')
@@ -94,7 +94,7 @@ Creates a `current` symlink in the `remote_directory` which points to the most r
 #### setReleaseGroup (if group specified in options)
 Sets the group for the new release, if the `group` is specified in options.
 
-#### setReleasePermissions (if permission specified in options)
+#### setReleasePermissions (if permissions specified in options)
 Sets the permissions of the `remote_directory` to the permissions specified in the options.
 
 #### removeOldReleases (if releases_to_keep specified and > 0)

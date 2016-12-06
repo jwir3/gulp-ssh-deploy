@@ -203,6 +203,7 @@ describe("gulp-ssh-deploy setup", function() {
     new GulpSSHDeploy(modifiedOptions, gulp);
 
     expect(gulp.tasks).to.have.ownProperty('createCurrentSymlink');
+    expect(gulp.tasks.createCurrentSymlink.dep).to.include.members(['transferDistribution'])
   });
 
   it ("should not add a gulp task for removing old releases if releases_to_keep is not specified", () => {
@@ -222,7 +223,7 @@ describe("gulp-ssh-deploy setup", function() {
 
     expect(gulp.tasks).to.not.have.ownProperty('removeOldReleases');
     expect(gulp.tasks).to.have.ownProperty('setReleaseGroup');
-    expect(gulp.tasks.setReleaseGroup.dep).to.include.members(['transferDistribution']);
+    expect(gulp.tasks.setReleaseGroup.dep).to.include.members(['createCurrentSymlink']);
   });
 
   it ("should add a gulp task for removing old releases if releases_to_keep was specified and greater than 0", () => {
@@ -242,6 +243,7 @@ describe("gulp-ssh-deploy setup", function() {
     new GulpSSHDeploy(modifiedOptions, gulp);
 
     expect(gulp.tasks).to.have.ownProperty('removeOldReleases');
+    expect(gulp.tasks.removeOldReleases.dep).to.have.members(['createCurrentSymlink'])
   });
 
   it ("should add a gulp task for setting release group if 'group' is present in the options", () => {
@@ -267,7 +269,7 @@ describe("gulp-ssh-deploy setup", function() {
 
     expect(gulp.tasks).to.not.have.ownProperty('setReleaseGroup');
     expect(gulp.tasks).to.have.ownProperty('setReleasePermissions');
-    expect(gulp.tasks.setReleasePermissions.dep).to.include.members(['transferDistribution']);
+    expect(gulp.tasks.setReleasePermissions.dep).to.include.members(['createCurrentSymlink']);
   });
 
   it ("should add a gulp task for setting release permissions", () => {
@@ -296,7 +298,7 @@ describe("gulp-ssh-deploy setup", function() {
     expect(gulp.tasks.release.dep).to.include.members(['setReleaseGroup']);
   });
 
-  it ("should not add gulp tasks for setting release permissions or groups if both permission and group are not present in the options", () => {
+  it ("should not add gulp tasks for setting release permissions or groups if both permissions and group are not present in the options", () => {
     gulp.tasks = {};
 
     var modifiedOptions = {
@@ -312,7 +314,7 @@ describe("gulp-ssh-deploy setup", function() {
 
     expect(gulp.tasks).to.not.have.ownProperty('setReleasePermissions');
     expect(gulp.tasks).to.not.have.ownProperty('setReleaseGroup');
-    expect(gulp.tasks.release.dep).to.include.members(['transferDistribution']);
+    expect(gulp.tasks.release.dep).to.include.members(['createCurrentSymlink']);
     expect(gulp.tasks.release.dep).to.not.include.members(['setReleasePermissions', 'setReleaseGroup']);
   });
 
