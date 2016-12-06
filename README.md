@@ -64,7 +64,8 @@ The location on the remote host where the deployment should be placed. The deplo
 The username of the user to login with on the remote host. Must have permissions to access the `remote_directory`.
 
 #### ssh_key_file (Required)
-A private key to be used to login to the remote host over SSH with the above `username`.
+A private key to be used to login to the remote host over SSH with the above `username`. The special character `~` will be resolved to the current user's
+home directory.
 
 #### releases_to_keep (Optional, default = null)
 If specified, this will indicate how many consecutive releases should be kept around after a deployment. If the number of subdirectories in the remote host's `remote_directory/releases` exceeds this number, the version numbers that are first in order by `ls` (i.e. typically the least recent deployments) will be removed until this number is reached.
