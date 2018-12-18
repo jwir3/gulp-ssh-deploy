@@ -22,28 +22,29 @@ import { GulpSSHDeploy } from 'gulp-ssh-deploy';
 
 Alternatively, you can use the CommonJS module import syntax:
 ```javascript
-var GulpSSHDeploy = require('gulp-ssh-deploy');
+var GulpSSHDeploy = require('gulp-ssh-deploy').GulpSSHDeploy;
 ```
 
 ### Configuration
-You must set up a new instance of `GulpSSHDeploy` with a set of options, and your instance of `gulp` (to which tasks will be added). The easiest way to do this is to add the following to your `gulpfile.js` (or `gulpfile.babel.js`, if using babel):
+You must set up a new instance of `GulpSSHDeploy` with a set of options, and your instance of `gulp` (to which tasks will be added). Once the instance of `GulpSSHDeploy` is created, it takes care of adding the necessary task(s) for you! The easiest way to do this is to add the following to your `gulpfile.js` (or `gulpfile.babel.js`, if using babel):
+```javascript
+new GulpSSHDeploy(
+  {
+    "host": "your-server.somewhere.com",
+    "port": 22,
+    "package_json_file_path": "package.json",
+    "source_files": ".",
+    "remote_directory": "/path/to/remote/deploy/dir",
+    "username": "someuser",
+    "ssh_key_file": "/path/to/your/local/ssh/key",
+    "releases_to_keep": 3,
+    "group": "remote-group",
+    "permissions": "ugo+rX",
+    "package_task": "someTask"
+  }, gulp);
 ```
-var options = {
-  "host": "your-server.somewhere.com",
-  "port": 22,
-  "package_json_file_path": "package.json",
-  "source_files": ".",
-  "remote_directory": "/path/to/remote/deploy/dir",
-  "username": "someuser",
-  "ssh_key_file": "/path/to/your/local/ssh/key",
-  "releases_to_keep": 3,
-  "group": "remote-group",
-  "permissions": "ugo+rX",
-  "package_task": "someTask"
-};
 
-new GulpSSHDeploy(options, gulp);
-```
+It's advised to add this to the _end_ of your `gulpfile.js`, because it relies on `package_task` being defined. Thus, it must be defined _before_ the constructor for `GulpSSHDeploy` is invoked.
 
 #### host (Required)
 The address or domain name of the host machine where the deployment will reside.
@@ -116,4 +117,10 @@ Problems/FAQ
     } catch (exception) {
       exception.printWarning();
     }
+  ```
+
+- **Encounter `GulpSSHDeploy is not a constructor` when using CommonJS `require()`.**
+  - This is an issue with the way it was suggested to use `GulpSSHDeploy`, due to the fact that it was expecting that you used `import` and not CommonJS. To get around this issue, be sure you're setting up your `gulpfile.js` like the following:
+  ```
+  var GulpSSHDeploy = require('gulp-ssh-deploy').GulpSSHDeploy;
   ```
