@@ -40,7 +40,8 @@ new GulpSSHDeploy(
     "releases_to_keep": 3,
     "group": "remote-group",
     "permissions": "ugo+rX",
-    "package_task": "someTask"
+    "package_task": "someTask",
+    "deploy_task_name": "deploy"
   }, gulp);
 ```
 
@@ -78,7 +79,10 @@ If specified, the deployed release will be `chgrp`'ed to this group. The group m
 If specified, the deployed release folder will be `chmod`'ed to this set of permissions. May be specified in human-readable format (e.g. `ug+rwX`) or octal (e.g. `0777`).
 
 #### package_task (Optional, default = '')
-The task to run prior to transferring the distribution. This task should bundle your distribution and prepare it for transfer to the remote host. This will be added as a dependency to the `release` task.
+The task to run prior to transferring the distribution. This task should bundle your distribution and prepare it for transfer to the remote host. This will be added as a dependency to the `deploy` task.
+
+#### deploy_task_name (Optional, default = 'deploy')
+The task name to call the 'deployment' task. This will create a task within your gulp configuration with the given name that performs the deployment.
 
 ### Gulp Tasks
 Setup and configuration will create up to seven gulp tasks:

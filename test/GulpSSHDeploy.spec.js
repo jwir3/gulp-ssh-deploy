@@ -1,3 +1,5 @@
+'use strict';
+
 import { expect } from 'chai';
 import { GulpSSHDeploy, DeploymentException } from '../dist/index';
 import jetpack from 'fs-jetpack';
@@ -295,7 +297,7 @@ describe("gulp-ssh-deploy setup", function() {
 
     expect(gulp.tasks).to.not.have.ownProperty('setReleasePermissions');
     expect(gulp.tasks).to.have.ownProperty('setReleaseGroup');
-    expect(gulp.tasks.release.dep).to.include.members(['setReleaseGroup']);
+    expect(gulp.tasks.deploy.dep).to.include.members(['setReleaseGroup']);
   });
 
   it ("should not add gulp tasks for setting release permissions or groups if both permissions and group are not present in the options", () => {
@@ -314,14 +316,14 @@ describe("gulp-ssh-deploy setup", function() {
 
     expect(gulp.tasks).to.not.have.ownProperty('setReleasePermissions');
     expect(gulp.tasks).to.not.have.ownProperty('setReleaseGroup');
-    expect(gulp.tasks.release.dep).to.include.members(['createCurrentSymlink']);
-    expect(gulp.tasks.release.dep).to.not.include.members(['setReleasePermissions', 'setReleaseGroup']);
+    expect(gulp.tasks.deploy.dep).to.include.members(['createCurrentSymlink']);
+    expect(gulp.tasks.deploy.dep).to.not.include.members(['setReleasePermissions', 'setReleaseGroup']);
   });
 
   it ("should add a gulp task for deploying to a server", () => {
-    new GulpSSHDeploy(options, gulp);
+    let gulpSshDeploy = new GulpSSHDeploy(options, gulp);
 
-    expect(gulp.tasks).to.have.ownProperty('release');
+    expect(gulp.tasks).to.have.ownProperty(gulpSshDeploy.getDeployTaskName());
   });
 
   it ('should plan to copy all files in the test directory for a source specification of "test"', () => {

@@ -76,6 +76,10 @@ export function GulpSSHDeploy(aOptions, gulp) {
     self.mOptions.source_files = '.';
   }
 
+  if (!self.mOptions.deploy_task_name) {
+    self.mOptions.deploy_task_name = 'deploy';
+  }
+
   self._setupSSHKey();
 
   self.mGulpSSH = new GulpSSH({
@@ -168,6 +172,11 @@ GulpSSHDeploy.prototype = {
                     .findSync();
   },
 
+  getDeployTaskName: function() {
+    let self = this;
+    return self.mOptions.deploy_task_name;
+  },
+
   _setupSSHKey: function() {
     var self = this;
     if (!self.mOptions.ssh_key_file
@@ -204,13 +213,14 @@ GulpSSHDeploy.prototype = {
       self._addSetReleasePermissionsTask();
     }
 
-    self._addReleaseTask();
+    self._addDeployTask();
   },
 
   _addMakeRemoteDirectoriesTask: function() {
     var self = this;
     self.mGulp.task('makeRemoteDirectories', function() {
-      return self.mGulpSSH.exec(['mkdir -p ' + self.mCurrentVersionReleasePath],
+
+      return self.mGulpSSH.exec([`mkdir -p ${self.mCurrentVersionReleasePath}`],
                                 { filePath: 'release-' + self.mCurrentDate + '.log'})
                           .pipe(self.mGulp.dest('logs'));
     });
@@ -309,7 +319,7 @@ GulpSSHDeploy.prototype = {
     });
   },
 
-  _addReleaseTask: function() {
+  _addDeployTask: function() {
     var self = this;
     var dep = [];
     if (self.mOptions.permissions && self.mOptions.permissions.length > 0) {
@@ -324,6 +334,6 @@ GulpSSHDeploy.prototype = {
       dep.push('createCurrentSymlink');
     }
 
-    self.mGulp.task('release', dep);
+    self.mGulp.task(self.getDeployTaskName(), dep);
   }
 };
