@@ -166,6 +166,9 @@ describe("gulp-ssh-deploy setup", function() {
     new GulpSSHDeploy(modifiedOptions, gulp);
 
     expect(gulp.tasks).to.have.ownProperty('transferDistribution');
+
+    // This task should depend on 'makeRemoteDirectories'
+    expect(gulp.tasks.transferDistribution.dep).to.include('makeRemoteDirectories');
   });
 
   it ("should appropriately set up the remote paths", () => {

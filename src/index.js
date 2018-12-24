@@ -272,8 +272,7 @@ GulpSSHDeploy.prototype = {
 
   _addTransferDistributionTask: function() {
     var self = this;
-    var deps = [];
-    // var deps = ['makeRemotePath'];
+    var deps = ['makeRemoteDirectories'];
     if (self.mOptions.package_task) {
       deps.push(self.mOptions.package_task);
     }
