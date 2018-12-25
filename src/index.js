@@ -68,6 +68,10 @@ export function GulpSSHDeploy(aOptions, gulp) {
     }
   }
 
+  if (!self.mOptions.hasOwnProperty('create_current_symlink')) {
+    self.mOptions.create_current_symlink = true;
+  }
+
   if (!self.mOptions.package_json_file_path) {
     self.mOptions.package_json_file_path = 'package.json';
   }
@@ -200,7 +204,11 @@ GulpSSHDeploy.prototype = {
     var self = this;
     self._addMakeRemoteDirectoriesTask();
     self._addTransferDistributionTask();
-    self._addCreateSymlinkTask();
+
+    if (self.mOptions.create_current_symlink) {
+      self._addCreateSymlinkTask();
+    }
+
     if (self.mOptions.releases_to_keep && self.mOptions.releases_to_keep > 0) {
       self._addRemoveOldReleasesTask();
     }
@@ -228,7 +236,13 @@ GulpSSHDeploy.prototype = {
 
   _addRemoveOldReleasesTask: function() {
     var self = this;
-    self.mGulp.task('removeOldReleases', ['createCurrentSymlink'], function() {
+    var dep = ['createCurrentSymlink'];
+
+    if (!self.mOptions.create_current_symlink) {
+      dep = ['transferDistribution'];
+    }
+
+    self.mGulp.task('removeOldReleases', dep, function() {
       var toRemove = [];
 
       // Delete all old releases, as specified in the configuration.
@@ -288,10 +302,11 @@ GulpSSHDeploy.prototype = {
 
   _addSetReleaseGroupTask: function() {
     var self = this;
-    var dep = [];
+    var dep = ['transferDistribution'];
+
     if (self.mOptions.releases_to_keep && self.mOptions.releases_to_keep > 0) {
       dep = ['removeOldReleases'];
-    } else {
+    } else if (self.mOptions.create_current_symlink) {
       dep = ['createCurrentSymlink'];
     }
 
@@ -304,11 +319,11 @@ GulpSSHDeploy.prototype = {
 
   _addSetReleasePermissionsTask: function() {
     var self = this;
-    var dep = [];
+    var dep = ['createCurrentSymlink'];
     if (self.mOptions.group && self.mOptions.group.length > 0) {
       dep = ['setReleaseGroup'];
-    } else {
-      dep = ['createCurrentSymlink'];
+    } else if (!self.mOptions.create_current_symlink) {
+      dep = ['transferDistribution'];
     }
 
     self.mGulp.task('setReleasePermissions', dep, function() {
@@ -329,8 +344,10 @@ GulpSSHDeploy.prototype = {
       dep.push('setReleaseGroup');
     }
 
-    if (dep.length == 0) {
+    if (dep.length == 0 && self.mOptions.create_current_symlink) {
       dep.push('createCurrentSymlink');
+    } else {
+      dep.push('transferDistribution');
     }
 
     self.mGulp.task(self.getDeployTaskName(), dep);
