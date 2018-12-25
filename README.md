@@ -84,6 +84,9 @@ The task to run prior to transferring the distribution. This task should bundle 
 #### deploy_task_name (Optional, default = 'deploy')
 The task name to call the 'deployment' task. This will create a task within your gulp configuration with the given name that performs the deployment.
 
+#### create_current_symlink (Optional, default = 'true')
+Whether deploying should create a symbolic link to the latest deployment on the remote host. If set to `true`, then a link called `current` will be created in the root deployment directory that points to the _directory_ of last release that was successfully deployed.
+
 ### Gulp Tasks
 Setup and configuration will create up to seven gulp tasks:
 

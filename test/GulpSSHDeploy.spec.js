@@ -18,6 +18,10 @@ var options = {
 };
 
 describe("gulp-ssh-deploy setup", function() {
+  beforeEach(() => {
+    gulp.tasks = [];
+  });
+
   it ("should correctly set up an instance of GulpSSHDeploy that has package json information", () => {
     let expectedPackageJsonVersion = jetpack.read('package.json', 'json').version;
     let deployer = new GulpSSHDeploy(options, gulp);
@@ -349,5 +353,28 @@ describe("gulp-ssh-deploy setup", function() {
     let filesToCopy = deployer.getFilesToCopy();
     expect(filesToCopy).to.have.lengthOf(expectedFiles.length);
     expect(filesToCopy).to.include.members(expectedFiles);
+  });
+
+  it ('should not add a task to create a symlink if the option is not specified', () => {
+    var someOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "port": 22,
+      "source_files": "test",
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+      "releases_to_keep": 3,
+      "group": "www-glasstower",
+      "permissions": "ugo+rX",
+      "create_current_symlink": false
+    };
+
+    let newDeployer = new GulpSSHDeploy(someOptions, gulp);
+
+    expect(gulp.tasks).to.not.have.ownProperty('createCurrentSymlink');
+
+    // The setReleaseGroup task should have a dependency of
+    // 'transferDistribution', instead of 'createCurrentSymlink'.
+    expect(gulp.tasks.setReleaseGroup.dep).to.not.include.members(['createCurrentSymlink']);
   });
 });
