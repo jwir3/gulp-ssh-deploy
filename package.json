@@ -33,7 +33,7 @@
     "babel": "^6.5.2",
     "babel-preset-es2015": "^6.18.0",
     "babel-preset-stage-0": "^6.16.0",
-    "filehound": "^1.12.2",
+    "filehound": "^1.17.3",
     "fs-jetpack": "^0.10.3",
     "gulp": "^3.9.1",
     "gulp-sequence": "^0.4.6",
