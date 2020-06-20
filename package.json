@@ -24,6 +24,9 @@
     "email": "jaywir3@gmail.com",
     "url": "https://jwir3.com"
   },
+  "funding": {
+    "url": "https://github.com/sponsors/jwir3"
+  },
   "license": "MPL-2.0",
   "bugs": {
     "url": "https://github.com/jwir3/gulp-ssh-deploy/issues"
