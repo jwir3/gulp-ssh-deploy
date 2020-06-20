@@ -68,12 +68,20 @@ export function GulpSSHDeploy(aOptions, gulp) {
     }
   }
 
+  if (!self.mOptions.hasOwnProperty('create_current_symlink')) {
+    self.mOptions.create_current_symlink = true;
+  }
+
   if (!self.mOptions.package_json_file_path) {
     self.mOptions.package_json_file_path = 'package.json';
   }
 
   if (!self.mOptions.source_files) {
     self.mOptions.source_files = '.';
+  }
+
+  if (!self.mOptions.deploy_task_name) {
+    self.mOptions.deploy_task_name = 'deploy';
   }
 
   self._setupSSHKey();
@@ -168,6 +176,11 @@ GulpSSHDeploy.prototype = {
                     .findSync();
   },
 
+  getDeployTaskName: function() {
+    let self = this;
+    return self.mOptions.deploy_task_name;
+  },
+
   _setupSSHKey: function() {
     var self = this;
     if (!self.mOptions.ssh_key_file
@@ -191,7 +204,11 @@ GulpSSHDeploy.prototype = {
     var self = this;
     self._addMakeRemoteDirectoriesTask();
     self._addTransferDistributionTask();
-    self._addCreateSymlinkTask();
+
+    if (self.mOptions.create_current_symlink) {
+      self._addCreateSymlinkTask();
+    }
+
     if (self.mOptions.releases_to_keep && self.mOptions.releases_to_keep > 0) {
       self._addRemoveOldReleasesTask();
     }
@@ -204,13 +221,14 @@ GulpSSHDeploy.prototype = {
       self._addSetReleasePermissionsTask();
     }
 
-    self._addReleaseTask();
+    self._addDeployTask();
   },
 
   _addMakeRemoteDirectoriesTask: function() {
     var self = this;
     self.mGulp.task('makeRemoteDirectories', function() {
-      return self.mGulpSSH.exec(['mkdir -p ' + self.mCurrentVersionReleasePath],
+
+      return self.mGulpSSH.exec([`mkdir -p ${self.mCurrentVersionReleasePath}`],
                                 { filePath: 'release-' + self.mCurrentDate + '.log'})
                           .pipe(self.mGulp.dest('logs'));
     });
@@ -218,7 +236,13 @@ GulpSSHDeploy.prototype = {
 
   _addRemoveOldReleasesTask: function() {
     var self = this;
-    self.mGulp.task('removeOldReleases', ['createCurrentSymlink'], function() {
+    var dep = ['createCurrentSymlink'];
+
+    if (!self.mOptions.create_current_symlink) {
+      dep = ['transferDistribution'];
+    }
+
+    self.mGulp.task('removeOldReleases', dep, function() {
       var toRemove = [];
 
       // Delete all old releases, as specified in the configuration.
@@ -262,8 +286,7 @@ GulpSSHDeploy.prototype = {
 
   _addTransferDistributionTask: function() {
     var self = this;
-    var deps = [];
-    // var deps = ['makeRemotePath'];
+    var deps = ['makeRemoteDirectories'];
     if (self.mOptions.package_task) {
       deps.push(self.mOptions.package_task);
     }
@@ -279,10 +302,11 @@ GulpSSHDeploy.prototype = {
 
   _addSetReleaseGroupTask: function() {
     var self = this;
-    var dep = [];
+    var dep = ['transferDistribution'];
+
     if (self.mOptions.releases_to_keep && self.mOptions.releases_to_keep > 0) {
       dep = ['removeOldReleases'];
-    } else {
+    } else if (self.mOptions.create_current_symlink) {
       dep = ['createCurrentSymlink'];
     }
 
@@ -295,11 +319,11 @@ GulpSSHDeploy.prototype = {
 
   _addSetReleasePermissionsTask: function() {
     var self = this;
-    var dep = [];
+    var dep = ['createCurrentSymlink'];
     if (self.mOptions.group && self.mOptions.group.length > 0) {
       dep = ['setReleaseGroup'];
-    } else {
-      dep = ['createCurrentSymlink'];
+    } else if (!self.mOptions.create_current_symlink) {
+      dep = ['transferDistribution'];
     }
 
     self.mGulp.task('setReleasePermissions', dep, function() {
@@ -309,7 +333,7 @@ GulpSSHDeploy.prototype = {
     });
   },
 
-  _addReleaseTask: function() {
+  _addDeployTask: function() {
     var self = this;
     var dep = [];
     if (self.mOptions.permissions && self.mOptions.permissions.length > 0) {
@@ -320,10 +344,12 @@ GulpSSHDeploy.prototype = {
       dep.push('setReleaseGroup');
     }
 
-    if (dep.length == 0) {
+    if (dep.length == 0 && self.mOptions.create_current_symlink) {
       dep.push('createCurrentSymlink');
+    } else {
+      dep.push('transferDistribution');
     }
 
-    self.mGulp.task('release', dep);
+    self.mGulp.task(self.getDeployTaskName(), dep);
   }
 };

@@ -22,28 +22,30 @@ import { GulpSSHDeploy } from 'gulp-ssh-deploy';
 
 Alternatively, you can use the CommonJS module import syntax:
 ```javascript
-var GulpSSHDeploy = require('gulp-ssh-deploy');
+var GulpSSHDeploy = require('gulp-ssh-deploy').GulpSSHDeploy;
 ```
 
 ### Configuration
-You must set up a new instance of `GulpSSHDeploy` with a set of options, and your instance of `gulp` (to which tasks will be added). The easiest way to do this is to add the following to your `gulpfile.js` (or `gulpfile.babel.js`, if using babel):
+You must set up a new instance of `GulpSSHDeploy` with a set of options, and your instance of `gulp` (to which tasks will be added). Once the instance of `GulpSSHDeploy` is created, it takes care of adding the necessary task(s) for you! The easiest way to do this is to add the following to your `gulpfile.js` (or `gulpfile.babel.js`, if using babel):
+```javascript
+new GulpSSHDeploy(
+  {
+    "host": "your-server.somewhere.com",
+    "port": 22,
+    "package_json_file_path": "package.json",
+    "source_files": ".",
+    "remote_directory": "/path/to/remote/deploy/dir",
+    "username": "someuser",
+    "ssh_key_file": "/path/to/your/local/ssh/key",
+    "releases_to_keep": 3,
+    "group": "remote-group",
+    "permissions": "ugo+rX",
+    "package_task": "someTask",
+    "deploy_task_name": "deploy"
+  }, gulp);
 ```
-var options = {
-  "host": "your-server.somewhere.com",
-  "port": 22,
-  "package_json_file_path": "package.json",
-  "source_files": ".",
-  "remote_directory": "/path/to/remote/deploy/dir",
-  "username": "someuser",
-  "ssh_key_file": "/path/to/your/local/ssh/key",
-  "releases_to_keep": 3,
-  "group": "remote-group",
-  "permissions": "ugo+rX",
-  "package_task": "someTask"
-};
 
-new GulpSSHDeploy(options, gulp);
-```
+It's advised to add this to the _end_ of your `gulpfile.js`, because it relies on `package_task` being defined. Thus, it must be defined _before_ the constructor for `GulpSSHDeploy` is invoked.
 
 #### host (Required)
 The address or domain name of the host machine where the deployment will reside.
@@ -77,7 +79,13 @@ If specified, the deployed release will be `chgrp`'ed to this group. The group m
 If specified, the deployed release folder will be `chmod`'ed to this set of permissions. May be specified in human-readable format (e.g. `ug+rwX`) or octal (e.g. `0777`).
 
 #### package_task (Optional, default = '')
-The task to run prior to transferring the distribution. This task should bundle your distribution and prepare it for transfer to the remote host. This will be added as a dependency to the `release` task.
+The task to run prior to transferring the distribution. This task should bundle your distribution and prepare it for transfer to the remote host. This will be added as a dependency to the `deploy` task.
+
+#### deploy_task_name (Optional, default = 'deploy')
+The task name to call the 'deployment' task. This will create a task within your gulp configuration with the given name that performs the deployment.
+
+#### create_current_symlink (Optional, default = 'true')
+Whether deploying should create a symbolic link to the latest deployment on the remote host. If set to `true`, then a link called `current` will be created in the root deployment directory that points to the _directory_ of last release that was successfully deployed.
 
 ### Gulp Tasks
 Setup and configuration will create up to seven gulp tasks:
@@ -116,4 +124,10 @@ Problems/FAQ
     } catch (exception) {
       exception.printWarning();
     }
+  ```
+
+- **Encounter `GulpSSHDeploy is not a constructor` when using CommonJS `require()`.**
+  - This is an issue with the way it was suggested to use `GulpSSHDeploy`, due to the fact that it was expecting that you used `import` and not CommonJS. To get around this issue, be sure you're setting up your `gulpfile.js` like the following:
+  ```
+  var GulpSSHDeploy = require('gulp-ssh-deploy').GulpSSHDeploy;
   ```

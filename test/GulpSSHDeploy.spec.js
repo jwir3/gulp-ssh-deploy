@@ -1,3 +1,5 @@
+'use strict';
+
 import { expect } from 'chai';
 import { GulpSSHDeploy, DeploymentException } from '../dist/index';
 import jetpack from 'fs-jetpack';
@@ -16,6 +18,10 @@ var options = {
 };
 
 describe("gulp-ssh-deploy setup", function() {
+  beforeEach(() => {
+    gulp.tasks = [];
+  });
+
   it ("should correctly set up an instance of GulpSSHDeploy that has package json information", () => {
     let expectedPackageJsonVersion = jetpack.read('package.json', 'json').version;
     let deployer = new GulpSSHDeploy(options, gulp);
@@ -164,6 +170,9 @@ describe("gulp-ssh-deploy setup", function() {
     new GulpSSHDeploy(modifiedOptions, gulp);
 
     expect(gulp.tasks).to.have.ownProperty('transferDistribution');
+
+    // This task should depend on 'makeRemoteDirectories'
+    expect(gulp.tasks.transferDistribution.dep).to.include('makeRemoteDirectories');
   });
 
   it ("should appropriately set up the remote paths", () => {
@@ -295,7 +304,7 @@ describe("gulp-ssh-deploy setup", function() {
 
     expect(gulp.tasks).to.not.have.ownProperty('setReleasePermissions');
     expect(gulp.tasks).to.have.ownProperty('setReleaseGroup');
-    expect(gulp.tasks.release.dep).to.include.members(['setReleaseGroup']);
+    expect(gulp.tasks.deploy.dep).to.include.members(['setReleaseGroup']);
   });
 
   it ("should not add gulp tasks for setting release permissions or groups if both permissions and group are not present in the options", () => {
@@ -314,14 +323,14 @@ describe("gulp-ssh-deploy setup", function() {
 
     expect(gulp.tasks).to.not.have.ownProperty('setReleasePermissions');
     expect(gulp.tasks).to.not.have.ownProperty('setReleaseGroup');
-    expect(gulp.tasks.release.dep).to.include.members(['createCurrentSymlink']);
-    expect(gulp.tasks.release.dep).to.not.include.members(['setReleasePermissions', 'setReleaseGroup']);
+    expect(gulp.tasks.deploy.dep).to.include.members(['createCurrentSymlink']);
+    expect(gulp.tasks.deploy.dep).to.not.include.members(['setReleasePermissions', 'setReleaseGroup']);
   });
 
   it ("should add a gulp task for deploying to a server", () => {
-    new GulpSSHDeploy(options, gulp);
+    let gulpSshDeploy = new GulpSSHDeploy(options, gulp);
 
-    expect(gulp.tasks).to.have.ownProperty('release');
+    expect(gulp.tasks).to.have.ownProperty(gulpSshDeploy.getDeployTaskName());
   });
 
   it ('should plan to copy all files in the test directory for a source specification of "test"', () => {
@@ -344,5 +353,28 @@ describe("gulp-ssh-deploy setup", function() {
     let filesToCopy = deployer.getFilesToCopy();
     expect(filesToCopy).to.have.lengthOf(expectedFiles.length);
     expect(filesToCopy).to.include.members(expectedFiles);
+  });
+
+  it ('should not add a task to create a symlink if the option is not specified', () => {
+    var someOptions = {
+      "host": "endor.glasstowerstudios.com",
+      "port": 22,
+      "source_files": "test",
+      "remote_directory": "/var/www/arbitrator.glasstowerstudios.com",
+      "username": "scottj",
+      "ssh_key_file": "~/.ssh/id_rsa",
+      "releases_to_keep": 3,
+      "group": "www-glasstower",
+      "permissions": "ugo+rX",
+      "create_current_symlink": false
+    };
+
+    let newDeployer = new GulpSSHDeploy(someOptions, gulp);
+
+    expect(gulp.tasks).to.not.have.ownProperty('createCurrentSymlink');
+
+    // The setReleaseGroup task should have a dependency of
+    // 'transferDistribution', instead of 'createCurrentSymlink'.
+    expect(gulp.tasks.setReleaseGroup.dep).to.not.include.members(['createCurrentSymlink']);
   });
 });
