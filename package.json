@@ -35,7 +35,7 @@
   "dependencies": {
     "filehound": "^1.12.2",
     "fs-jetpack": "^0.10.3",
-    "gulp": "^3.9.1",
+    "gulp": "^4.0.2",
     "gulp-sequence": "^0.4.6",
     "gulp-ssh": "^0.7.0",
     "gulp-util": "^3.0.7"
